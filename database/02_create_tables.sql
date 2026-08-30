@@ -1,0 +1,120 @@
+USE FraudInvestigationDb;
+GO
+
+IF OBJECT_ID(N'dbo.customers', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.customers (
+        customer_id INT NOT NULL,
+        customer_reference NVARCHAR(50) NOT NULL,
+        first_name NVARCHAR(100) NOT NULL,
+        last_name NVARCHAR(100) NOT NULL,
+        email NVARCHAR(255) NULL,
+        phone NVARCHAR(50) NULL,
+        date_of_birth DATETIME2 NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT DF_customers_created_at DEFAULT SYSUTCDATETIME(),
+        is_active BIT NOT NULL CONSTRAINT DF_customers_is_active DEFAULT 1,
+        CONSTRAINT PK_customers PRIMARY KEY (customer_id),
+        CONSTRAINT UQ_customers_customer_reference UNIQUE (customer_reference)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.transactions', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.transactions (
+        transaction_id INT NOT NULL,
+        customer_id INT NOT NULL,
+        business_transaction_id NVARCHAR(64) NOT NULL,
+        transaction_datetime DATETIME2 NOT NULL,
+        recorded_customer_reference NVARCHAR(50) NULL,
+        amount DECIMAL(12,2) NOT NULL CONSTRAINT CK_transactions_amount CHECK (amount >= 0.00),
+        merchant_name NVARCHAR(200) NULL,
+        merchant_category NVARCHAR(100) NULL,
+        channel NVARCHAR(50) NULL,
+        location NVARCHAR(100) NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT DF_transactions_created_at DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT PK_transactions PRIMARY KEY (transaction_id),
+        CONSTRAINT FK_transactions_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.risk_alerts', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.risk_alerts (
+        alert_id INT NOT NULL,
+        transaction_id INT NOT NULL,
+        customer_id INT NOT NULL,
+        alert_type NVARCHAR(50) NOT NULL,
+        risk_score INT NOT NULL CONSTRAINT CK_risk_alerts_risk_score CHECK (risk_score BETWEEN 0 AND 100),
+        severity NVARCHAR(20) NOT NULL CONSTRAINT CK_risk_alerts_severity CHECK (severity IN (N'LOW', N'MEDIUM', N'HIGH', N'CRITICAL')),
+        alert_status NVARCHAR(20) NOT NULL CONSTRAINT DF_risk_alerts_alert_status DEFAULT (N'OPEN') CONSTRAINT CK_risk_alerts_alert_status CHECK (alert_status IN (N'OPEN', N'ACKNOWLEDGED', N'RESOLVED', N'DISMISSED')),
+        created_at DATETIME2 NOT NULL CONSTRAINT DF_risk_alerts_created_at DEFAULT SYSUTCDATETIME(),
+        notes NVARCHAR(500) NULL,
+        CONSTRAINT PK_risk_alerts PRIMARY KEY (alert_id),
+        CONSTRAINT FK_risk_alerts_transactions FOREIGN KEY (transaction_id) REFERENCES dbo.transactions (transaction_id),
+        CONSTRAINT FK_risk_alerts_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.investigations', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.investigations (
+        investigation_id INT NOT NULL,
+        alert_id INT NULL,
+        customer_id INT NOT NULL,
+        investigation_status NVARCHAR(20) NOT NULL CONSTRAINT CK_investigations_status CHECK (investigation_status IN (N'NEW', N'IN_PROGRESS', N'ON_HOLD', N'CLOSED', N'ESCALATED')),
+        priority NVARCHAR(20) NOT NULL CONSTRAINT CK_investigations_priority CHECK (priority IN (N'LOW', N'MEDIUM', N'HIGH', N'CRITICAL')),
+        assigned_to NVARCHAR(100) NULL,
+        summary NVARCHAR(500) NOT NULL,
+        created_at DATETIME2 NOT NULL CONSTRAINT DF_investigations_created_at DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2 NOT NULL CONSTRAINT DF_investigations_updated_at DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT PK_investigations PRIMARY KEY (investigation_id),
+        CONSTRAINT FK_investigations_alerts FOREIGN KEY (alert_id) REFERENCES dbo.risk_alerts (alert_id),
+        CONSTRAINT FK_investigations_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'IX_transactions_transaction_datetime', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_transactions_transaction_datetime
+        ON dbo.transactions (transaction_datetime);
+END;
+GO
+
+IF OBJECT_ID(N'IX_transactions_customer_transaction_time', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_transactions_customer_transaction_time
+        ON dbo.transactions (customer_id, transaction_datetime);
+END;
+GO
+
+IF OBJECT_ID(N'IX_transactions_business_transaction_id', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_transactions_business_transaction_id
+        ON dbo.transactions (business_transaction_id);
+END;
+GO
+
+IF OBJECT_ID(N'IX_transactions_merchant_category', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_transactions_merchant_category
+        ON dbo.transactions (merchant_category);
+END;
+GO
+
+IF OBJECT_ID(N'IX_risk_alerts_lookup', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_risk_alerts_lookup
+        ON dbo.risk_alerts (customer_id, alert_status, created_at);
+END;
+GO
+
+IF OBJECT_ID(N'IX_risk_alerts_transaction_lookup', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_risk_alerts_transaction_lookup
+        ON dbo.risk_alerts (transaction_id, alert_status);
+END;
+GO
