@@ -1,0 +1,32 @@
+# Python virtual environments and caches
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.coverage
+**/htmlcov/
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Node / frontend dependencies and build output
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+**/.vite/
+**/.cache/
+
+# Logs and editor files
+**/*.log
+**/*.tmp
+**/.DS_Store
+**/Thumbs.db
+**/.vscode/
+
+# Local project artifacts
+**/exports/
