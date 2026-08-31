@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import check_database_connection
+from app.routes.alerts import router as alerts_router
+from app.routes.analysis import router as analysis_router
 from app.routes.transactions import router as transactions_router
 
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
@@ -25,3 +27,5 @@ def health_check() -> dict:
 
 
 app.include_router(transactions_router)
+app.include_router(alerts_router)
+app.include_router(analysis_router)

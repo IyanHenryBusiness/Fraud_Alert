@@ -27,7 +27,7 @@ BEGIN
         business_transaction_id NVARCHAR(64) NOT NULL,
         transaction_datetime DATETIME2 NOT NULL,
         recorded_customer_reference NVARCHAR(50) NULL,
-        amount DECIMAL(12,2) NOT NULL CONSTRAINT CK_transactions_amount CHECK (amount >= 0.00),
+        amount DECIMAL(12,2) NOT NULL,
         merchant_name NVARCHAR(200) NULL,
         merchant_category NVARCHAR(100) NULL,
         channel NVARCHAR(50) NULL,
@@ -39,21 +39,83 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.risk_alert_id_seq', N'SO') IS NULL
+BEGIN
+    CREATE SEQUENCE dbo.risk_alert_id_seq
+        AS INT
+        START WITH 6000
+        INCREMENT BY 1;
+END;
+GO
+
 IF OBJECT_ID(N'dbo.risk_alerts', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.risk_alerts (
-        alert_id INT NOT NULL,
+        alert_id INT NOT NULL
+            CONSTRAINT DF_risk_alerts_alert_id
+            DEFAULT (NEXT VALUE FOR dbo.risk_alert_id_seq),
+
         transaction_id INT NOT NULL,
         customer_id INT NOT NULL,
+
+        analysis_key NVARCHAR(200) NOT NULL,
+
         alert_type NVARCHAR(50) NOT NULL,
-        risk_score INT NOT NULL CONSTRAINT CK_risk_alerts_risk_score CHECK (risk_score BETWEEN 0 AND 100),
-        severity NVARCHAR(20) NOT NULL CONSTRAINT CK_risk_alerts_severity CHECK (severity IN (N'LOW', N'MEDIUM', N'HIGH', N'CRITICAL')),
-        alert_status NVARCHAR(20) NOT NULL CONSTRAINT DF_risk_alerts_alert_status DEFAULT (N'OPEN') CONSTRAINT CK_risk_alerts_alert_status CHECK (alert_status IN (N'OPEN', N'ACKNOWLEDGED', N'RESOLVED', N'DISMISSED')),
-        created_at DATETIME2 NOT NULL CONSTRAINT DF_risk_alerts_created_at DEFAULT SYSUTCDATETIME(),
+
+        risk_score INT NOT NULL
+            CONSTRAINT CK_risk_alerts_risk_score
+            CHECK (risk_score BETWEEN 0 AND 100),
+
+        severity NVARCHAR(20) NOT NULL
+            CONSTRAINT CK_risk_alerts_severity
+            CHECK (severity IN (
+                N'LOW',
+                N'MEDIUM',
+                N'HIGH',
+                N'CRITICAL'
+            )),
+
+        alert_status NVARCHAR(20) NOT NULL
+            CONSTRAINT DF_risk_alerts_alert_status
+            DEFAULT (N'OPEN')
+            CONSTRAINT CK_risk_alerts_alert_status
+            CHECK (alert_status IN (
+                N'OPEN',
+                N'ACKNOWLEDGED',
+                N'RESOLVED',
+                N'DISMISSED'
+            )),
+
+        rule_evidence NVARCHAR(MAX) NOT NULL
+            CONSTRAINT DF_risk_alerts_rule_evidence
+            DEFAULT (N'[]'),
+
         notes NVARCHAR(500) NULL,
-        CONSTRAINT PK_risk_alerts PRIMARY KEY (alert_id),
-        CONSTRAINT FK_risk_alerts_transactions FOREIGN KEY (transaction_id) REFERENCES dbo.transactions (transaction_id),
-        CONSTRAINT FK_risk_alerts_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id)
+
+        created_at DATETIME2 NOT NULL
+            CONSTRAINT DF_risk_alerts_created_at
+            DEFAULT SYSUTCDATETIME(),
+
+        updated_at DATETIME2 NOT NULL
+            CONSTRAINT DF_risk_alerts_updated_at
+            DEFAULT SYSUTCDATETIME(),
+
+        CONSTRAINT PK_risk_alerts
+            PRIMARY KEY (alert_id),
+
+        CONSTRAINT UQ_risk_alerts_analysis_key
+            UNIQUE (analysis_key),
+
+        CONSTRAINT CK_risk_alerts_rule_evidence_json
+            CHECK (ISJSON(rule_evidence) = 1),
+
+        CONSTRAINT FK_risk_alerts_transactions
+            FOREIGN KEY (transaction_id)
+            REFERENCES dbo.transactions (transaction_id),
+
+        CONSTRAINT FK_risk_alerts_customers
+            FOREIGN KEY (customer_id)
+            REFERENCES dbo.customers (customer_id)
     );
 END;
 GO
@@ -116,5 +178,21 @@ IF OBJECT_ID(N'IX_risk_alerts_transaction_lookup', N'IX') IS NULL
 BEGIN
     CREATE INDEX IX_risk_alerts_transaction_lookup
         ON dbo.risk_alerts (transaction_id, alert_status);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = N'IX_risk_alerts_severity_status'
+      AND object_id = OBJECT_ID(N'dbo.risk_alerts')
+)
+BEGIN
+    CREATE INDEX IX_risk_alerts_severity_status
+        ON dbo.risk_alerts (
+            severity,
+            alert_status,
+            updated_at
+        );
 END;
 GO
