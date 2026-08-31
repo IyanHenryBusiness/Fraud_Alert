@@ -5,10 +5,13 @@ from app.schemas.alert import (
     AlertStatusUpdate,
     TriggeredRule,
 )
+from app.schemas.analysis import AnalysisRunResult, SeverityTotals
 
 __all__ = [
     "AlertListItem",
     "AlertDetail",
     "AlertStatusUpdate",
     "TriggeredRule",
+    "AnalysisRunResult",
+    "SeverityTotals",
 ]

@@ -99,3 +99,64 @@ class AlertRepository:
         except Exception:
             self.db.rollback()
             raise
+
+    def get_by_analysis_key(self, analysis_key: str) -> Optional[RiskAlert]:
+        """Retrieve a single alert by its analysis_key.
+
+        Args:
+            analysis_key: The unique analysis key (e.g. "1004:v1").
+
+        Returns:
+            RiskAlert object or None if not found.
+        """
+        return (
+            self.db.query(RiskAlert)
+            .filter(RiskAlert.analysis_key == analysis_key)
+            .first()
+        )
+
+    def add(self, alert: RiskAlert) -> RiskAlert:
+        """Stage a new alert for insertion. Does not commit.
+
+        Args:
+            alert: A new RiskAlert instance to persist.
+
+        Returns:
+            The staged RiskAlert instance.
+        """
+        self.db.add(alert)
+        return alert
+
+    def update_calculated_fields(
+        self,
+        alert: RiskAlert,
+        *,
+        alert_type: str,
+        risk_score: int,
+        severity: str,
+        rule_evidence: str,
+        updated_at: datetime,
+    ) -> RiskAlert:
+        """Update only the analysis-calculated fields of an existing alert.
+
+        Preserves alert_id, transaction_id, customer_id, analysis_key,
+        alert_status, notes, and created_at since those are analyst-controlled
+        or immutable. Does not commit.
+
+        Args:
+            alert: The existing RiskAlert to update.
+            alert_type: New alert_type value.
+            risk_score: New risk_score value.
+            severity: New severity value.
+            rule_evidence: New rule_evidence JSON string.
+            updated_at: New updated_at timestamp (naive UTC).
+
+        Returns:
+            The updated RiskAlert instance.
+        """
+        alert.alert_type = alert_type
+        alert.risk_score = risk_score
+        alert.severity = severity
+        alert.rule_evidence = rule_evidence
+        alert.updated_at = updated_at
+        return alert
