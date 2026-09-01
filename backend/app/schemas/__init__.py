@@ -6,6 +6,13 @@ from app.schemas.alert import (
     TriggeredRule,
 )
 from app.schemas.analysis import AnalysisRunResult, SeverityTotals
+from app.schemas.investigation import (
+    GeminiInvestigationPayload,
+    InvestigationGenerateRequest,
+    InvestigationResponse,
+    ProviderInvestigationResult,
+    RecommendedAction,
+)
 
 __all__ = [
     "AlertListItem",
@@ -14,4 +21,9 @@ __all__ = [
     "TriggeredRule",
     "AnalysisRunResult",
     "SeverityTotals",
+    "InvestigationGenerateRequest",
+    "ProviderInvestigationResult",
+    "RecommendedAction",
+    "InvestigationResponse",
+    "GeminiInvestigationPayload",
 ]

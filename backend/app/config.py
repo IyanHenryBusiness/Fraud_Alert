@@ -10,10 +10,12 @@ class Settings(BaseSettings):
 
     COPILOT_MODE: str = "mock"
     COPILOT_TOKEN_ENDPOINT: str = ""
-    COPILOT_DIRECT_LINE_BASE_URL: str = (
-        "https://directline.botframework.com/v3/directline"
-    )
+    COPILOT_DIRECT_LINE_BASE_URL: str = ("https://directline.botframework.com/v3/directline")
     COPILOT_RESPONSE_TIMEOUT_SECONDS: int = 30
+
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GEMINI_RESPONSE_TIMEOUT_SECONDS: int = 30
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent.parent / ".env",
