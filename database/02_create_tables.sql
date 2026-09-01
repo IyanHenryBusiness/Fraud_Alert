@@ -145,7 +145,7 @@ BEGIN
             CONSTRAINT DF_investigations_provider
             DEFAULT N'mock'
             CONSTRAINT CK_investigations_provider
-            CHECK (provider IN (N'mock', N'copilot_studio')),
+            CHECK (provider IN (N'mock', N'copilot_studio', N'gemini')),
         context_snapshot NVARCHAR(MAX) NOT NULL
             CONSTRAINT DF_investigations_context_snapshot
             DEFAULT N'{}'

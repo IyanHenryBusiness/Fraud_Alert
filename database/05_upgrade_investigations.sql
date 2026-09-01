@@ -79,7 +79,7 @@ BEGIN TRY
         UPDATE dbo.investigations
         SET provider = N''mock''
         WHERE provider IS NULL
-           OR provider NOT IN (N''mock'', N''copilot_studio'');
+           OR provider NOT IN (N''mock'', N''copilot_studio'', N''gemini'');
     ';
 
     ------------------------------------------------------------
@@ -244,7 +244,7 @@ BEGIN TRY
         EXEC sp_executesql N'
             ALTER TABLE dbo.investigations
             ADD CONSTRAINT CK_investigations_provider
-            CHECK (provider IN (N''mock'', N''copilot_studio''));
+            CHECK (provider IN (N''mock'', N''copilot_studio'', N''gemini''));
         ';
     END;
 
