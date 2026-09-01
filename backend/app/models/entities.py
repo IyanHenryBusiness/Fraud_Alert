@@ -21,6 +21,9 @@ from app.database import Base
 # Sequence for risk_alert_id_seq (starts at 6000)
 risk_alert_id_seq = Sequence("risk_alert_id_seq", schema="dbo")
 
+# Sequence for investigation_id_seq (starts at 10000)
+investigation_id_seq = Sequence("investigation_id_seq", schema="dbo")
+
 
 class Customer(Base):
     """Represents a customer in the fraud investigation system."""
@@ -120,7 +123,9 @@ class Investigation(Base):
     __tablename__ = "investigations"
     __table_args__ = {"schema": "dbo"}
 
-    investigation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    investigation_id: Mapped[int] = mapped_column(
+        Integer, investigation_id_seq, primary_key=True
+    )
     alert_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("dbo.risk_alerts.alert_id"), nullable=True
     )
@@ -131,6 +136,9 @@ class Investigation(Base):
     priority: Mapped[str] = mapped_column(Unicode(20), nullable=False)
     assigned_to: Mapped[str] = mapped_column(Unicode(100), nullable=True)
     summary: Mapped[str] = mapped_column(Unicode(500), nullable=False)
+    provider: Mapped[str] = mapped_column(Unicode(30), nullable=False)
+    context_snapshot: Mapped[str] = mapped_column(UnicodeText, nullable=False)
+    response_payload: Mapped[str] = mapped_column(UnicodeText, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 

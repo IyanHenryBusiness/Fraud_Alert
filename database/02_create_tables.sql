@@ -120,22 +120,55 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.investigation_id_seq', N'SO') IS NULL
+BEGIN
+    CREATE SEQUENCE dbo.investigation_id_seq
+        AS INT
+        START WITH 10000
+        INCREMENT BY 1;
+END;
+GO
+
 IF OBJECT_ID(N'dbo.investigations', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.investigations (
-        investigation_id INT NOT NULL,
+        investigation_id INT NOT NULL
+            CONSTRAINT DF_investigations_investigation_id
+            DEFAULT (NEXT VALUE FOR dbo.investigation_id_seq),
         alert_id INT NULL,
         customer_id INT NOT NULL,
         investigation_status NVARCHAR(20) NOT NULL CONSTRAINT CK_investigations_status CHECK (investigation_status IN (N'NEW', N'IN_PROGRESS', N'ON_HOLD', N'CLOSED', N'ESCALATED')),
         priority NVARCHAR(20) NOT NULL CONSTRAINT CK_investigations_priority CHECK (priority IN (N'LOW', N'MEDIUM', N'HIGH', N'CRITICAL')),
         assigned_to NVARCHAR(100) NULL,
         summary NVARCHAR(500) NOT NULL,
+        provider NVARCHAR(30) NOT NULL
+            CONSTRAINT DF_investigations_provider
+            DEFAULT N'mock'
+            CONSTRAINT CK_investigations_provider
+            CHECK (provider IN (N'mock', N'copilot_studio', N'gemini')),
+        context_snapshot NVARCHAR(MAX) NOT NULL
+            CONSTRAINT DF_investigations_context_snapshot
+            DEFAULT N'{}'
+            CONSTRAINT CK_investigations_context_snapshot_json
+            CHECK (ISJSON(context_snapshot) = 1),
+        response_payload NVARCHAR(MAX) NOT NULL
+            CONSTRAINT DF_investigations_response_payload
+            DEFAULT N'{}'
+            CONSTRAINT CK_investigations_response_payload_json
+            CHECK (ISJSON(response_payload) = 1),
         created_at DATETIME2 NOT NULL CONSTRAINT DF_investigations_created_at DEFAULT SYSUTCDATETIME(),
         updated_at DATETIME2 NOT NULL CONSTRAINT DF_investigations_updated_at DEFAULT SYSUTCDATETIME(),
         CONSTRAINT PK_investigations PRIMARY KEY (investigation_id),
         CONSTRAINT FK_investigations_alerts FOREIGN KEY (alert_id) REFERENCES dbo.risk_alerts (alert_id),
         CONSTRAINT FK_investigations_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id)
     );
+END;
+GO
+
+IF OBJECT_ID(N'IX_investigations_alert_created', N'IX') IS NULL
+BEGIN
+    CREATE INDEX IX_investigations_alert_created
+        ON dbo.investigations (alert_id, created_at);
 END;
 GO
 
