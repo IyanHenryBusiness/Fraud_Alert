@@ -1,0 +1,3 @@
+export function AnalyticsPage() {
+  return <div className="analytics-page"><span className="eyebrow accent">Reporting studio</span><h1>Fraud Analytics</h1><p className="intro-copy">Aggregate fraud-risk trends and operational reporting will live here, giving teams a wider lens beyond individual alerts.</p><section className="tableau-placeholder" aria-label="Tableau visualization placeholder"><div className="placeholder-grid" /><div className="placeholder-copy"><span className="placeholder-icon">+</span><h2>Tableau Public visualization</h2><p>Tableau Public will be embedded during Phase 7. No live dashboard or invented data is shown yet.</p></div></section></div>
+}
